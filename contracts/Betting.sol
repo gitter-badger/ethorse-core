@@ -49,14 +49,6 @@ contract Betting is usingOraclize {
    Transfer(msg.sender, msg.value);
   }
   function reward() payable {
-    ac2.transfer(0.05 ether);
-    /*require(myAddress.balance >5);
-    if (stringToUintNormalize(BTC) >=3500) {
-      ac2.transfer(1);
-    }
-    else if (stringToUintNormalize(BTC) <3500) {
-      ac1.transfer(1);
-    }*/
   }
   function stringToUintNormalize(string s) constant returns (uint result) {
     bytes memory b = bytes(s);
