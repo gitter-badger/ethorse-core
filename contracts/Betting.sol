@@ -17,12 +17,8 @@ contract Betting is usingOraclize {
   event Transfer(address _from, uint256 _value);
 
   function Betting() {
-    priceTicker();
-  }
-
-  function priceTicker() {
-      oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
-      update();
+    oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
+    update();
   }
 
   function __callback(bytes32 myid, string result, bytes proof) {
