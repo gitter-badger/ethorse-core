@@ -1,70 +1,144 @@
-pragma solidity ^0.4.11; //We have to specify what version of the compiler this code will use
-
+pragma solidity ^0.4.0;
 import "./usingOraclize.sol";
 
 contract Betting is usingOraclize {
 
-  /* Datatypes for oraclize */
-  string public BTC;
-  uint betting_duration = 0;
-  bool public fetched=false;
-  address public ac1 = 0x62C8BDBDFD5EC4B7F56537BC96C78068341A8F6F;
-  address public ac2 = 0xCB87BDB88EEF4ABC66AE6F1A131D41021C145863;
-  address public myaccount = this;
+    string public BTC_pre;
+    string public BTC_post;
+    string public ETH_pre;
+    string public ETH_post;
+    uint reward_amount;
+    uint public voter_count=0;
+    bytes32 BTC_ID;
+    bytes32 ETH_ID;
+    string public winner_horse;
+    struct info{
+        string horse;
+        uint amount;
+    }
+    mapping (address => info) voter;
+    mapping (uint => address) voterIndex;
+    bool price_check_btc = false;
+    bool price_check_eth = false;
+    bool other_price_check = false;
+    bool public pointer_check = false;
 
-  event newOraclizeQuery(string description);
-  event newPriceTicker(string price);
-  event Transfer(address _from, uint256 _value);
+    uint public winner_factor = 0;
+    uint public winner_count = 0;
+    uint public winner_reward;
 
-  function Betting() {
-    oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
-    update();
-  }
+    event newOraclizeQuery(string description);
+    event newPriceTicker(string price);
+    event Deposit(address _from, uint256 _value);
+    event Withdraw(address _to, uint256 _value);
 
-  function __callback(bytes32 myid, string result, bytes proof) {
-      if(msg.sender != oraclize_cbAddress()) throw;
-      fetched = true;
-      BTC = result;
-      newPriceTicker(BTC);
-      // return ETHXBT;
-      /*reward();*/
-  }
+    function Betting() payable {
+        oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
+        // update(180);
+    }
 
-  function update() payable {
-      if (oraclize_getPrice("URL") > this.balance) {
-          newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
-      } else {
-          newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
-          oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
+    function __callback(bytes32 myid, string result, bytes proof) {
+        if (msg.sender != oraclize_cbAddress()) throw;
+        if (myid == BTC_ID){
+          if (price_check_btc == false) {
+            BTC_pre = result;
+            price_check_btc = true;
+            newPriceTicker(BTC_pre);
+            update(300);
+          } else if (price_check_btc == true){
+            BTC_post = result;
+            newPriceTicker(BTC_post);
+            if (other_price_check == true){
+              reward();
+            } else {
+                other_price_check = true;
+            }
+          }
+        } else if (myid == ETH_ID) {
+          if (price_check_eth == false) {
+            ETH_pre = result;
+            price_check_eth = true;
+            newPriceTicker(ETH_pre);
+            update(300);
+          } else if (price_check_eth == true){
+            ETH_post = result;
+            newPriceTicker(ETH_post);
+            if (other_price_check == true){
+              reward();
+            } else {
+                other_price_check = true;
+            }
+          }
+        }
+    }
+
+    function placeBet(string horse) payable {
+      voter[msg.sender].horse = horse;
+      voter[msg.sender].amount = msg.value;
+      voterIndex[voter_count] = msg.sender;
+      voter_count = voter_count + 1;
+      Deposit(msg.sender, msg.value);
+    }
+
+    function () payable {
+      Deposit(msg.sender, msg.value);
+    }
+
+    function update(uint betting_duration) payable {
+        if (oraclize_getPrice("URL") > this.balance) {
+            newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
+        } else {
+            newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+            BTC_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
+            ETH_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
+        }
+    }
+
+    function reward() payable {
+      /*reward_amount = this.balance - 0.01 ether;*/
+
+      // calculate the percentage
+      if ( (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) > (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) ) {
+        winner_horse = "BTC";
       }
-  }
-  function sendEther() payable returns (uint) {
-    return msg.value;
-  }
-  function () payable {
-   Transfer(msg.sender, msg.value);
-  }
-  function reward() payable {
-  }
-  function stringToUintNormalize(string s) constant returns (uint result) {
-    bytes memory b = bytes(s);
-    uint i;
-    result = 0;
-    for (i = 0; i < b.length; i++) {
-      uint c = uint(b[i]);
-      if (c >= 48 && c <= 57) {
-        result = result * 10 + (c - 48);
+      else if ( (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) > (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) ) {
+        winner_horse = "ETH";
+      } else {
+        throw;
+      }
+
+      for (uint i=0; i<voter_count; i++) {
+        if (sha3(voter[voterIndex[voter_count]].horse) == sha3(winner_horse)) {
+          pointer_check = true;
+          winner_factor = winner_factor + voter[voterIndex[voter_count]].amount;
+        }
+      }
+      for (i=0; i<voter_count; i++) {
+        if (sha3(voter[voterIndex[voter_count]].horse) == sha3(winner_horse)) {
+          winner_reward = (voter[voterIndex[voter_count]].amount / winner_factor )*this.balance;
+          voterIndex[voter_count].transfer(winner_reward);
+          Withdraw(voterIndex[voter_count], winner_reward);
+        }
       }
     }
-    result/=100;
+
+    function stringToUintNormalize(string s) constant returns (uint result) {
+      bytes memory b = bytes(s);
+      uint i;
+      result = 0;
+      for (i = 0; i < b.length; i++) {
+        uint c = uint(b[i]);
+        if (c >= 48 && c <= 57) {
+          result = result * 10 + (c - 48);
+        }
+      }
+      result/=100;
+    }
+    function getVoterAmount(uint index) constant returns (uint) {
+      return voter[voterIndex[index]].amount;
+    }
+
+    function getVoterHorse(uint index) constant returns (string) {
+      return voter[voterIndex[index]].horse;
+    }
   }
-  function getBlocktime() returns (uint) {
-    return block.timestamp;
-  }
-  function fetchResult() returns (string){
-    return BTC;
-  }
-  function fetchStatus() returns (bool) {
-    return fetched;
-  }
-}
