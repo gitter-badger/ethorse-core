@@ -1,4 +1,4 @@
-pragma solidity ^0.4.0;
+pragma solidity ^0.4.10;
 import "./usingOraclize.sol";
 
 contract Betting is usingOraclize {
@@ -18,9 +18,9 @@ contract Betting is usingOraclize {
     }
     mapping (address => info) voter;
     mapping (uint => address) voterIndex;
-    bool price_check_btc = false;
-    bool price_check_eth = false;
-    bool other_price_check = false;
+    bool public price_check_btc = false;
+    bool public price_check_eth = false;
+    bool public other_price_check = false;
     bool public pointer_check = false;
 
     uint public winner_factor = 0;
@@ -32,7 +32,7 @@ contract Betting is usingOraclize {
     event Deposit(address _from, uint256 _value);
     event Withdraw(address _to, uint256 _value);
 
-    function Betting() payable {
+    function Betting() {
         oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
         // update(180);
     }
@@ -94,8 +94,7 @@ contract Betting is usingOraclize {
         }
     }
 
-    function reward() payable {
-      /*reward_amount = this.balance - 0.01 ether;*/
+    function reward() {
 
       // calculate the percentage
       if ( (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) > (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) ) {
@@ -107,17 +106,17 @@ contract Betting is usingOraclize {
         throw;
       }
 
-      for (uint i=0; i<voter_count; i++) {
-        if (sha3(voter[voterIndex[voter_count]].horse) == sha3(winner_horse)) {
+      for (uint i=0; i<voter_count+1; i++) {
+        if (sha3(voter[voterIndex[i]].horse) == sha3(winner_horse)) {
           pointer_check = true;
-          winner_factor = winner_factor + voter[voterIndex[voter_count]].amount;
+          winner_factor = winner_factor + voter[voterIndex[i]].amount;
         }
       }
-      for (i=0; i<voter_count; i++) {
-        if (sha3(voter[voterIndex[voter_count]].horse) == sha3(winner_horse)) {
-          winner_reward = (voter[voterIndex[voter_count]].amount / winner_factor )*this.balance;
-          voterIndex[voter_count].transfer(winner_reward);
-          Withdraw(voterIndex[voter_count], winner_reward);
+      for (i=0; i<voter_count+1; i++) {
+        if (sha3(voter[voterIndex[i]].horse) == sha3(winner_horse)) {
+          winner_reward = (voter[voterIndex[i]].amount / winner_factor )*this.balance;
+          voterIndex[i].transfer(winner_reward);
+          Withdraw(voterIndex[i], winner_reward);
         }
       }
     }
@@ -140,5 +139,10 @@ contract Betting is usingOraclize {
 
     function getVoterHorse(uint index) constant returns (string) {
       return voter[voterIndex[index]].horse;
+    }
+
+    function suicide () {
+        address owner = 0xafE0e12d44486365e75708818dcA5558d29beA7D;
+        owner.transfer(this.balance);
     }
   }
