@@ -3,21 +3,26 @@ import "./usingOraclize.sol";
 
 contract Betting is usingOraclize {
 
-    string public BTC_pre;
-    string public BTC_post;
-    string public ETH_pre;
-    string public ETH_post;
     uint reward_amount;
     uint public voter_count=0;
-    bytes32 BTC_ID;
-    bytes32 ETH_ID;
     string public winner_horse;
-    struct info{
-        string horse;
+    struct user_info{
+        address from;
+        bytes5 horse;
         uint amount;
     }
-    mapping (address => info) voter;
-    mapping (uint => address) voterIndex;
+    struct coin_info{
+      uint total;
+      uint pre;
+      uint post;
+      bytes32 ID;
+      bool price_check;
+    }
+    /*mapping (address => info) voter;*/
+
+    mapping (bytes32 => bytes5) oraclizeIndex;
+    mapping (bytes5 => coin_info) coinIndex;
+    mapping (uint => user_info) voterIndex;
     bool public price_check_btc = false;
     bool public price_check_eth = false;
     bool public other_price_check = false;
@@ -39,6 +44,23 @@ contract Betting is usingOraclize {
 
     function __callback(bytes32 myid, string result, bytes proof) {
         if (msg.sender != oraclize_cbAddress()) throw;
+        bytes5 coin_pointer;
+        coin_pointer = oraclizeIndex[myid];
+        if (price_check_btc == false) {
+          BTC_pre = result;
+          price_check_btc = true;
+          newPriceTicker(BTC_pre);
+          update(300);
+        } else if (price_check_btc == true){
+          BTC_post = result;
+          newPriceTicker(BTC_post);
+          if (other_price_check == true){
+            reward();
+          } else {
+              other_price_check = true;
+          }
+        }
+
         if (myid == BTC_ID){
           if (price_check_btc == false) {
             BTC_pre = result;
@@ -72,7 +94,7 @@ contract Betting is usingOraclize {
         }
     }
 
-    function placeBet(string horse) payable {
+    function placeBet(bytes5 horse) payable {
       voter[msg.sender].horse = horse;
       voter[msg.sender].amount = msg.value;
       voterIndex[voter_count] = msg.sender;
