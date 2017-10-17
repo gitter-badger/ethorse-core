@@ -6,7 +6,7 @@ contract Betting is usingOraclize {
     uint public voter_count=0;
     bytes32 coin_pointer;
     bytes32 temp_ID;
-    uint coin_count
+    uint countdown=3;
 
     struct user_info{
         address from;
@@ -46,54 +46,22 @@ contract Betting is usingOraclize {
     }
 
     function __callback(bytes32 myid, string result, bytes proof) {
-        if (msg.sender != oraclize_cbAddress()) throw;
-        coin_pointer = oraclizeIndex[myid];
+      if (msg.sender != oraclize_cbAddress()) throw;
+      coin_pointer = oraclizeIndex[myid];
 
-        if (coinIndex[coin_pointer].price_check != true) {
-          coinIndex[coin_pointer].pre = stringToUintNormalize(result);
-          coinIndex[coin_pointer].price_check = true;
-          newPriceTicker(coinIndex[coin_pointer].pre);
-          update(300);
-        } else if (coinIndex[coin_pointer].price_check == true){
-          coinIndex[coin_pointer].post = stringToUintNormalize(result);
-          newPriceTicker(coinIndex[coin_pointer].post);
-          countdown = countdown - 1;
-          if (countdown == 0){
-            reward();
-          }
+      if (coinIndex[coin_pointer].price_check != true) {
+        coinIndex[coin_pointer].pre = stringToUintNormalize(result);
+        coinIndex[coin_pointer].price_check = true;
+        newPriceTicker(coinIndex[coin_pointer].pre);
+        update(300);
+      } else if (coinIndex[coin_pointer].price_check == true){
+        coinIndex[coin_pointer].post = stringToUintNormalize(result);
+        newPriceTicker(coinIndex[coin_pointer].post);
+        countdown = countdown - 1;
+        if (countdown == 0){
+          reward();
         }
-
-        if (myid == BTC_ID){
-          if (price_check_btc == false) {
-            BTC_pre = result;
-            price_check_btc = true;
-            newPriceTicker(BTC_pre);
-            update(300);
-          } else if (price_check_btc == true){
-            BTC_post = result;
-            newPriceTicker(BTC_post);
-            if (other_price_check == true){
-              reward();
-            } else {
-                other_price_check = true;
-            }
-          }
-        } else if (myid == ETH_ID) {
-          if (price_check_eth == false) {
-            ETH_pre = result;
-            price_check_eth = true;
-            newPriceTicker(ETH_pre);
-            update(300);
-          } else if (price_check_eth == true){
-            ETH_post = result;
-            newPriceTicker(ETH_post);
-            if (other_price_check == true){
-              reward();
-            } else {
-                other_price_check = true;
-            }
-          }
-        }
+      }
     }
 
     function placeBet(bytes32 horse) payable {
@@ -101,6 +69,7 @@ contract Betting is usingOraclize {
       voterIndex[voter_count].amount = msg.value;
       voterIndex[voter_count] = msg.sender;
       voter_count = voter_count + 1;
+      coinIndex[horse].total = coinIndex[horse].total + msg.value;
       Deposit(msg.sender, msg.value);
     }
 
