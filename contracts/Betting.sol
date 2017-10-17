@@ -3,12 +3,14 @@ import "./usingOraclize.sol";
 
 contract Betting is usingOraclize {
 
-    uint reward_amount;
     uint public voter_count=0;
-    string public winner_horse;
+    bytes32 coin_pointer;
+    bytes32 temp_ID;
+    uint coin_count
+
     struct user_info{
         address from;
-        bytes5 horse;
+        bytes32 horse;
         uint amount;
     }
     struct coin_info{
@@ -20,20 +22,21 @@ contract Betting is usingOraclize {
     }
     /*mapping (address => info) voter;*/
 
-    mapping (bytes32 => bytes5) oraclizeIndex;
-    mapping (bytes5 => coin_info) coinIndex;
+    mapping (bytes32 => bytes32) oraclizeIndex;
+    mapping (bytes32 => coin_info) coinIndex;
     mapping (uint => user_info) voterIndex;
-    bool public price_check_btc = false;
-    bool public price_check_eth = false;
+    /*bool public price_check_btc = false;*/
+    /*bool public price_check_eth = false;*/
     bool public other_price_check = false;
     bool public pointer_check = false;
 
     uint public winner_factor = 0;
     uint public winner_count = 0;
     uint public winner_reward;
+    string public winner_horse;
 
     event newOraclizeQuery(string description);
-    event newPriceTicker(string price);
+    event newPriceTicker(uint price);
     event Deposit(address _from, uint256 _value);
     event Withdraw(address _to, uint256 _value);
 
@@ -44,20 +47,19 @@ contract Betting is usingOraclize {
 
     function __callback(bytes32 myid, string result, bytes proof) {
         if (msg.sender != oraclize_cbAddress()) throw;
-        bytes5 coin_pointer;
         coin_pointer = oraclizeIndex[myid];
-        if (price_check_btc == false) {
-          BTC_pre = result;
-          price_check_btc = true;
-          newPriceTicker(BTC_pre);
+
+        if (coinIndex[coin_pointer].price_check != true) {
+          coinIndex[coin_pointer].pre = stringToUintNormalize(result);
+          coinIndex[coin_pointer].price_check = true;
+          newPriceTicker(coinIndex[coin_pointer].pre);
           update(300);
-        } else if (price_check_btc == true){
-          BTC_post = result;
-          newPriceTicker(BTC_post);
-          if (other_price_check == true){
+        } else if (coinIndex[coin_pointer].price_check == true){
+          coinIndex[coin_pointer].post = stringToUintNormalize(result);
+          newPriceTicker(coinIndex[coin_pointer].post);
+          countdown = countdown - 1;
+          if (countdown == 0){
             reward();
-          } else {
-              other_price_check = true;
           }
         }
 
@@ -94,9 +96,9 @@ contract Betting is usingOraclize {
         }
     }
 
-    function placeBet(bytes5 horse) payable {
-      voter[msg.sender].horse = horse;
-      voter[msg.sender].amount = msg.value;
+    function placeBet(bytes32 horse) payable {
+      voterIndex[voter_count].from = msg.sender;
+      voterIndex[voter_count].amount = msg.value;
       voterIndex[voter_count] = msg.sender;
       voter_count = voter_count + 1;
       Deposit(msg.sender, msg.value);
@@ -111,8 +113,12 @@ contract Betting is usingOraclize {
             newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
         } else {
             newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
-            BTC_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
-            ETH_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
+            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
+            oraclizeIndex[temp_ID] = bytes32("BTC");
+            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
+            oraclizeIndex[temp_ID] = bytes32("ETH");
+            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
+            oraclizeIndex[temp_ID] = bytes32("LTC");
         }
     }
 
