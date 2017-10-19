@@ -94,28 +94,28 @@ contract Betting is usingOraclize {
     function reward() {
 
       // calculate the percentage
-      if ( (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) > (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) ) {
-        winner_horse = "BTC";
-      }
-      else if ( (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) > (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) ) {
-        winner_horse = "ETH";
-      } else {
-        throw;
-      }
-
-      for (uint i=0; i<voter_count+1; i++) {
-        if (sha3(voter[voterIndex[i]].horse) == sha3(winner_horse)) {
-          pointer_check = true;
-          winner_factor = winner_factor + voter[voterIndex[i]].amount;
-        }
-      }
-      for (i=0; i<voter_count+1; i++) {
-        if (sha3(voter[voterIndex[i]].horse) == sha3(winner_horse)) {
-          winner_reward = (voter[voterIndex[i]].amount / winner_factor )*this.balance;
-          voterIndex[i].transfer(winner_reward);
-          Withdraw(voterIndex[i], winner_reward);
-        }
-      }
+//      if ( (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) > (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) ) {
+//        winner_horse = "BTC";
+//      }
+//      else if ( (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) > (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) ) {
+//        winner_horse = "ETH";
+//      } else {
+//        throw;
+//      }
+//
+//      for (uint i=0; i<voter_count+1; i++) {
+//        if (sha3(voter[voterIndex[i]].horse) == sha3(winner_horse)) {
+//          pointer_check = true;
+//          winner_factor = winner_factor + voter[voterIndex[i]].amount;
+//        }
+//      }
+//      for (i=0; i<voter_count+1; i++) {
+//        if (sha3(voter[voterIndex[i]].horse) == sha3(winner_horse)) {
+//          winner_reward = (voter[voterIndex[i]].amount / winner_factor )*this.balance;
+//          voterIndex[i].transfer(winner_reward);
+//          Withdraw(voterIndex[i], winner_reward);
+//        }
+//      }
     }
 
     function stringToUintNormalize(string s) constant returns (uint result) {
@@ -130,13 +130,13 @@ contract Betting is usingOraclize {
       }
       result/=100;
     }
-    function getVoterAmount(uint index) constant returns (uint) {
-      return voter[voterIndex[index]].amount;
-    }
-
-    function getVoterHorse(uint index) constant returns (string) {
-      return voter[voterIndex[index]].horse;
-    }
+//    function getVoterAmount(uint index) constant returns (uint) {
+//      return voter[voterIndex[index]].amount;
+//    }
+//
+//    function getVoterHorse(uint index) constant returns (string) {
+//      return voter[voterIndex[index]].horse;
+//    }
 
     function suicide () {
         address owner = 0xafE0e12d44486365e75708818dcA5558d29beA7D;
