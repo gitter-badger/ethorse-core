@@ -67,7 +67,7 @@ contract Betting is usingOraclize {
     function placeBet(bytes32 horse) payable {
       voterIndex[voter_count].from = msg.sender;
       voterIndex[voter_count].amount = msg.value;
-      voterIndex[voter_count] = msg.sender;
+      voterIndex[voter_count].horse = horse;
       voter_count = voter_count + 1;
       coinIndex[horse].total = coinIndex[horse].total + msg.value;
       Deposit(msg.sender, msg.value);
@@ -130,13 +130,13 @@ contract Betting is usingOraclize {
       }
       result/=100;
     }
-//    function getVoterAmount(uint index) constant returns (uint) {
-//      return voter[voterIndex[index]].amount;
-//    }
-//
-//    function getVoterHorse(uint index) constant returns (string) {
-//      return voter[voterIndex[index]].horse;
-//    }
+    function getCoinIndex(bytes32 index) constant returns (uint) {
+      return voter[voterIndex[index]].amount;
+    }
+
+    function getVoterHorse(uint index) constant returns (string) {
+      return voter[voterIndex[index]].horse;
+    }
 
     function suicide () {
         address owner = 0xafE0e12d44486365e75708818dcA5558d29beA7D;
