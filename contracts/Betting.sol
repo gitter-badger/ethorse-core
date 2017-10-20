@@ -135,6 +135,10 @@ contract Betting is usingOraclize {
       return (coinIndex[index].total, coinIndex[index].pre, coinIndex[index].post, coinIndex[index].price_check);
     }
 
+    function getOraclizeIndex(bytes32 index) constant returns (bytes32) {
+      return (coinIndex[index].total, coinIndex[index].pre, coinIndex[index].post, coinIndex[index].price_check);
+    }
+
     function suicide () {
         address owner = 0xafE0e12d44486365e75708818dcA5558d29beA7D;
         owner.transfer(this.balance);
