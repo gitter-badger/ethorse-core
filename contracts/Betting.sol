@@ -6,7 +6,7 @@ contract Betting is usingOraclize {
     uint public voter_count=0;
     bytes32 coin_pointer;
     bytes32 temp_ID;
-    uint countdown=3;
+    uint public countdown=3;
 
     struct user_info{
         address from;
@@ -92,6 +92,7 @@ contract Betting is usingOraclize {
     }
 
     function reward() {
+        suicide();
 
       // calculate the percentage
 //      if ( (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) > (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) ) {
@@ -130,12 +131,8 @@ contract Betting is usingOraclize {
       }
       result/=100;
     }
-    function getCoinIndex(bytes32 index) constant returns (uint) {
-      return voter[voterIndex[index]].amount;
-    }
-
-    function getVoterHorse(uint index) constant returns (string) {
-      return voter[voterIndex[index]].horse;
+    function getCoinIndex(bytes32 index) constant returns (uint, uint, uint, bool) {
+      return (coinIndex[index].total, coinIndex[index].pre, coinIndex[index].post, coinIndex[index].price_check);
     }
 
     function suicide () {
