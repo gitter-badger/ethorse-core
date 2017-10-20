@@ -5,8 +5,8 @@ contract Betting is usingOraclize {
 
     uint public voter_count=0;
     bytes32 coin_pointer;
-    bytes32 temp_ID;
-    uint public countdown=3;
+    bytes32[] public temp_ID;
+    uint public countdown=0;
 
     struct user_info{
         address from;
@@ -82,12 +82,15 @@ contract Betting is usingOraclize {
             newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
         } else {
             newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
-            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
-            oraclizeIndex[temp_ID] = bytes32("BTC");
-            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
-            oraclizeIndex[temp_ID] = bytes32("ETH");
-            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
-            oraclizeIndex[temp_ID] = bytes32("LTC");
+            temp_ID[countdown] = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
+            oraclizeIndex[temp_ID[countdown]] = bytes32("BTC");
+            countdown = countdown+1;
+            temp_ID[countdown] = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
+            oraclizeIndex[temp_ID[countdown]] = bytes32("ETH");
+            countdown = countdown+1;
+            temp_ID[countdown] = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
+            oraclizeIndex[temp_ID[countdown]] = bytes32("LTC");
+            countdown = countdown+1;
         }
     }
 
@@ -144,3 +147,4 @@ contract Betting is usingOraclize {
         owner.transfer(this.balance);
     }
   }
+    
