@@ -6,7 +6,7 @@ contract Betting is usingOraclize {
     uint public voter_count=0;
     bytes32 public coin_pointer;
     bytes32 public temp_ID;
-    uint public countdown=0;
+    uint public countdown=2;
 
     struct user_info{
         address from;
@@ -20,6 +20,8 @@ contract Betting is usingOraclize {
       bytes32 ID;
       bool price_check;
     }
+    coin_info callback_coin;
+
     /*mapping (address => info) voter;*/
     mapping (bytes32 => bytes32) oraclizeIndex;
     mapping (bytes32 => coin_info) coinIndex;
@@ -46,16 +48,16 @@ contract Betting is usingOraclize {
 
     function __callback(bytes32 myid, string result, bytes proof) {
       if (msg.sender != oraclize_cbAddress()) throw;
-      coin_pointer = oraclizeIndex[myid];
+      callback_coin = coinIndex[oraclizeIndex[myid]];
 
-      if (coinIndex[coin_pointer].price_check != true) {
-        coinIndex[coin_pointer].pre = stringToUintNormalize(result);
-        coinIndex[coin_pointer].price_check = true;
-        newPriceTicker(coinIndex[coin_pointer].pre);
+      if (callback_coin.price_check == false) {
+        callback_coin.pre = stringToUintNormalize(result);
+        callback_coin.price_check = true;
+        newPriceTicker(callback_coin.pre);
         update(300);
-      } else if (coinIndex[coin_pointer].price_check == true){
-        coinIndex[coin_pointer].post = stringToUintNormalize(result);
-        newPriceTicker(coinIndex[coin_pointer].post);
+      } else if (callback_coin.price_check == true){
+        callback_coin.post = stringToUintNormalize(result);
+        newPriceTicker(callback_coin.post);
         countdown = countdown - 1;
         if (countdown == 0){
           reward();
@@ -87,12 +89,12 @@ contract Betting is usingOraclize {
             coinIndex[coin_pointer].ID = temp_ID;
 
             temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
-            coin_pointer = bytes32("BTC");
+            coin_pointer = bytes32("ETH");
             oraclizeIndex[temp_ID] = coin_pointer;
             coinIndex[coin_pointer].ID = temp_ID;
 
             // temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
-            // coin_pointer = bytes32("ETH");
+            // coin_pointer = bytes32("LTC");
             // oraclizeIndex[temp_ID] = coin_pointer;
             // coinIndex[coin_pointer].ID = temp_ID;
         }
@@ -140,6 +142,10 @@ contract Betting is usingOraclize {
     }
     function getCoinIndex(bytes32 index) constant returns (uint, uint, uint, bool, bytes32) {
       return (coinIndex[index].total, coinIndex[index].pre, coinIndex[index].post, coinIndex[index].price_check, coinIndex[index].ID);
+    }
+
+    function getOraclizeIndex(bytes32 index) constant returns (bytes32) {
+      return oraclizeIndex[coinIndex[index].ID];
     }
 
     function suicide () {
