@@ -85,15 +85,21 @@ contract Betting is usingOraclize {
             coin_pointer = bytes32("BTC");
             oraclizeIndex[temp_ID] = coin_pointer;
             coinIndex[coin_pointer].ID = temp_ID;
-//            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
-//            oraclizeIndex[temp_ID] = bytes32("BTC");
-//            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
-//            oraclizeIndex[temp_ID] = bytes32("BTC");
+
+            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
+            coin_pointer = bytes32("BTC");
+            oraclizeIndex[temp_ID] = coin_pointer;
+            coinIndex[coin_pointer].ID = temp_ID;
+
+            // temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
+            // coin_pointer = bytes32("ETH");
+            // oraclizeIndex[temp_ID] = coin_pointer;
+            // coinIndex[coin_pointer].ID = temp_ID;
         }
     }
 
     function reward() {
-        // suicide();
+        suicide();
 
       // calculate the percentage
 //      if ( (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) > (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) ) {
