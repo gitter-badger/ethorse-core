@@ -8,6 +8,9 @@ contract Betting is usingOraclize {
     bytes32 public temp_ID;
     uint public countdown=3;
     address public owner;
+    int public BTC_delta;
+    int public ETH_delta;
+    int public LTC_delta;
 
     struct user_info{
         address from;
@@ -28,6 +31,7 @@ contract Betting is usingOraclize {
 
     uint public total_reward;
     bytes32 public winner_horse;
+    uint public winner_reward;
 
     event newOraclizeQuery(string description);
     event newPriceTicker(uint price);
@@ -100,11 +104,11 @@ contract Betting is usingOraclize {
 
     function reward() {
       // calculate the percentage
-      int BTC_delta = int(coinIndex[bytes32("BTC")].post - coinIndex[bytes32("BTC")].pre)/coinIndex[bytes32("BTC")].pre;
-      int ETH_delta = int(coinIndex[bytes32("ETH")].post - coinIndex[bytes32("ETH")].pre)/coinIndex[bytes32("ETH")].pre;
-      int LTC_delta = int(coinIndex[bytes32("LTC")].post - coinIndex[bytes32("LTC")].pre)/coinIndex[bytes32("LTC")].pre;
+      BTC_delta = int(coinIndex[bytes32("BTC")].post - coinIndex[bytes32("BTC")].pre)/int(coinIndex[bytes32("BTC")].pre);
+      ETH_delta = int(coinIndex[bytes32("ETH")].post - coinIndex[bytes32("ETH")].pre)/int(coinIndex[bytes32("ETH")].pre);
+      LTC_delta = int(coinIndex[bytes32("LTC")].post - coinIndex[bytes32("LTC")].pre)/int(coinIndex[bytes32("LTC")].pre);
 
-      owner.transfer(0.15*this.balance);
+      owner.transfer((this.balance*15)/100);
 
       if (BTC_delta > ETH_delta) {
           if (BTC_delta > LTC_delta) {
@@ -126,13 +130,14 @@ contract Betting is usingOraclize {
         if (voterIndex[i].horse == winner_horse) {
          winner_reward = (voterIndex[i].amount / coinIndex[winner_horse].total )*total_reward;
          voterIndex[i].from.transfer(winner_reward);
-         Withdraw(voterIndex[i], winner_reward);
+         Withdraw(voterIndex[i].from, winner_reward);
         }
      }
     }
 
     function stringToUintNormalize(string s) constant returns (uint) {
       uint p =2;
+      bool happening=false;
       bytes memory b = bytes(s);
       uint i;
       uint result = 0;
