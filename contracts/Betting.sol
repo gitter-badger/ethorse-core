@@ -11,6 +11,9 @@ contract Betting is usingOraclize {
     int public BTC_delta;
     int public ETH_delta;
     int public LTC_delta;
+    bytes32 BTC;
+    bytes32 ETH;
+    bytes32 LTC;
     bool public betting_open=true;
     bool public race_start=false;
 
@@ -106,11 +109,11 @@ contract Betting is usingOraclize {
             temp_ID = oraclize_query(60, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
             oraclizeIndex[temp_ID] = bytes32("BTC");
 
-
             temp_ID = oraclize_query(60, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
             oraclizeIndex[temp_ID] = bytes32("LTC");
 
             //bets closing price query
+            // oraclize_setCustomGasPrice(400000);
             temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
             oraclizeIndex[temp_ID] = bytes32("BTC");
 
@@ -122,28 +125,31 @@ contract Betting is usingOraclize {
         }
     }
 
-    function reward() internal {
+    function reward() {
       // calculating the difference in price with a precision of 5 digits
-      BTC_delta = int(coinIndex[bytes32("BTC")].post - coinIndex[bytes32("BTC")].pre)*100000/int(coinIndex[bytes32("BTC")].pre);
-      ETH_delta = int(coinIndex[bytes32("ETH")].post - coinIndex[bytes32("ETH")].pre)*100000/int(coinIndex[bytes32("ETH")].pre);
-      LTC_delta = int(coinIndex[bytes32("LTC")].post - coinIndex[bytes32("LTC")].pre)*100000/int(coinIndex[bytes32("LTC")].pre);
+      BTC=bytes32("BTC");
+      ETH=bytes32("ETH");
+      LTC=bytes32("LTC");
+      BTC_delta = int(coinIndex[BTC].post - coinIndex[BTC].pre)/int(coinIndex[BTC].pre);
+      ETH_delta = int(coinIndex[ETH].post - coinIndex[ETH].pre)/int(coinIndex[ETH].pre);
+      LTC_delta = int(coinIndex[LTC].post - coinIndex[LTC].pre)/int(coinIndex[LTC].pre);
 
       // contract fee
       owner.transfer((this.balance*15)/100);
 
       if (BTC_delta > ETH_delta) {
           if (BTC_delta > LTC_delta) {
-           winner_horse = bytes32("BTC");
+           winner_horse = BTC;
           }
           else {
-              winner_horse = bytes32("LTC");
+              winner_horse = LTC;
           }
       } else {
           if (ETH_delta > LTC_delta) {
-           winner_horse = bytes32("ETH");
+           winner_horse = ETH;
           }
           else {
-              winner_horse = bytes32("LTC");
+              winner_horse = LTC;
           }
       }
      total_reward = this.balance;
