@@ -43,7 +43,7 @@ contract Betting is usingOraclize {
     function Betting() {
         oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
         owner = msg.sender;
-
+        update(300,300);
     }
 
     modifier onlyOwner {
@@ -88,7 +88,7 @@ contract Betting is usingOraclize {
       Deposit(msg.sender, msg.value);
     }
 
-    function update(uint betting_duration, uint delay)  payable {
+    function update(uint delay, uint betting_duration) internal payable {
         if (oraclize_getPrice("URL") > (this.balance)) {
             newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
         } else {
