@@ -18,7 +18,8 @@ contract Betting is usingOraclize {
       uint total;
       uint pre;
       uint post;
-      bytes32 ID;
+      bytes32 ID_pre;
+      bytes32 ID_post;
       bool price_check;
     }
     /*mapping (address => info) voter;*/
@@ -78,30 +79,25 @@ contract Betting is usingOraclize {
             newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
         } else {
             newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
-            BTC_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
+            BTC_ID = oraclize_query(0, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
             coin_pointer = bytes32("BTC");
             oraclizeIndex[BTC_ID] = coin_pointer;
-            coinIndex[coin_pointer].ID = BTC_ID;
+            coinIndex[coin_pointer].ID_pre = BTC_ID;
 
-            ETH_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
+            ETH_ID = oraclize_query(0, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
             coin_pointer = bytes32("ETH");
             oraclizeIndex[ETH_ID] = coin_pointer;
-            coinIndex[coin_pointer].ID = ETH_ID;
+            coinIndex[coin_pointer].ID_pre = ETH_ID;
 
             BTC_ID = oraclize_query(300, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
             coin_pointer = bytes32("BTC");
             oraclizeIndex[BTC_ID] = coin_pointer;
-            coinIndex[coin_pointer].ID = BTC_ID;
+            coinIndex[coin_pointer].ID_post = BTC_ID;
 
             ETH_ID = oraclize_query(300, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
             coin_pointer = bytes32("ETH");
             oraclizeIndex[ETH_ID] = coin_pointer;
-            coinIndex[coin_pointer].ID = ETH_ID;
-
-            // temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
-            // coin_pointer = bytes32("ETH");
-            // oraclizeIndex[temp_ID] = coin_pointer;
-            // coinIndex[coin_pointer].ID = temp_ID;
+            coinIndex[coin_pointer].ID_post = ETH_ID;
         }
     }
 
@@ -148,6 +144,8 @@ contract Betting is usingOraclize {
     function getCoinIndex(bytes32 index) constant returns (uint, uint, uint, bool, bytes32) {
       return (coinIndex[index].total, coinIndex[index].pre, coinIndex[index].post, coinIndex[index].price_check, coinIndex[index].ID);
     }
+
+    function getOraclizeIndex(bytes32 index) constant returns ()
 
     function suicide () {
         address owner = 0xafE0e12d44486365e75708818dcA5558d29beA7D;
