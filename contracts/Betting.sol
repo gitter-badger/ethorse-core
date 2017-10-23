@@ -7,7 +7,7 @@ contract Betting is usingOraclize {
     bytes32 public coin_pointer;
     bytes32 public BTC_ID;
     bytes32 public ETH_ID;
-    uint public countdown=0;
+    uint public countdown=3;
 
     struct user_info{
         address from;
@@ -18,6 +18,7 @@ contract Betting is usingOraclize {
       uint total;
       uint pre;
       uint post;
+      uint count;
       bytes32 ID_pre;
       bytes32 ID_post;
       bool price_check;
@@ -54,10 +55,13 @@ contract Betting is usingOraclize {
         coinIndex[coin_pointer].pre = stringToUintNormalize(result);
         coinIndex[coin_pointer].price_check = true;
         newPriceTicker(coinIndex[coin_pointer].pre);
-        // update(300);
       } else if (coinIndex[coin_pointer].price_check == true){
         coinIndex[coin_pointer].post = stringToUintNormalize(result);
         newPriceTicker(coinIndex[coin_pointer].post);
+        countdown = countdown - 1;
+        if (countdown == 0) {
+            reward();
+        }
       }
     }
 
@@ -67,6 +71,8 @@ contract Betting is usingOraclize {
       voterIndex[voter_count].horse = horse;
       voter_count = voter_count + 1;
       coinIndex[horse].total = coinIndex[horse].total + msg.value;
+      coinIndex[horse].count = coinIndex[horse].count + 1;
+
       Deposit(msg.sender, msg.value);
     }
 
@@ -80,52 +86,50 @@ contract Betting is usingOraclize {
         } else {
             newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
             BTC_ID = oraclize_query(0, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
-            coin_pointer = bytes32("BTC");
-            oraclizeIndex[BTC_ID] = coin_pointer;
-            coinIndex[coin_pointer].ID_pre = BTC_ID;
+            oraclizeIndex[BTC_ID] = bytes32("BTC");
 
             ETH_ID = oraclize_query(0, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
-            coin_pointer = bytes32("ETH");
-            oraclizeIndex[ETH_ID] = coin_pointer;
-            coinIndex[coin_pointer].ID_pre = ETH_ID;
+            oraclizeIndex[ETH_ID] = bytes32("ETH");
 
-            BTC_ID = oraclize_query(300, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
-            coin_pointer = bytes32("BTC");
-            oraclizeIndex[BTC_ID] = coin_pointer;
-            coinIndex[coin_pointer].ID_post = BTC_ID;
+            LTC_ID = oraclize_query(0, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
+            oraclizeIndex[LTC_ID] = bytes32("LTC");
 
-            ETH_ID = oraclize_query(300, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
-            coin_pointer = bytes32("ETH");
-            oraclizeIndex[ETH_ID] = coin_pointer;
-            coinIndex[coin_pointer].ID_post = ETH_ID;
+            BTC_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
+            oraclizeIndex[BTC_ID] = bytes32("BTC");
+
+            ETH_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
+            oraclizeIndex[ETH_ID] = bytes32("ETH");
+
+            LTC_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
+            oraclizeIndex[LTC_ID] = bytes32("LTC");
         }
     }
 
     function reward() {
-        suicide();
+        // suicide();
 
       // calculate the percentage
-//      if ( (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) > (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) ) {
-//        winner_horse = "BTC";
+//      if ( coinIndex[] ) {
+//         winner_horse = "BTC";
 //      }
 //      else if ( (int(stringToUintNormalize(ETH_post)) - int(stringToUintNormalize(ETH_pre))) > (int(stringToUintNormalize(BTC_post)) - int(stringToUintNormalize(BTC_pre))) ) {
-//        winner_horse = "ETH";
+//         winner_horse = "ETH";
 //      } else {
-//        throw;
+//         throw;
 //      }
 //
 //      for (uint i=0; i<voter_count+1; i++) {
-//        if (sha3(voter[voterIndex[i]].horse) == sha3(winner_horse)) {
+//         if (sha3(voter[voterIndex[i]].horse) == sha3(winner_horse)) {
 //          pointer_check = true;
 //          winner_factor = winner_factor + voter[voterIndex[i]].amount;
-//        }
+//         }
 //      }
 //      for (i=0; i<voter_count+1; i++) {
-//        if (sha3(voter[voterIndex[i]].horse) == sha3(winner_horse)) {
+//         if (sha3(voter[voterIndex[i]].horse) == sha3(winner_horse)) {
 //          winner_reward = (voter[voterIndex[i]].amount / winner_factor )*this.balance;
 //          voterIndex[i].transfer(winner_reward);
 //          Withdraw(voterIndex[i], winner_reward);
-//        }
+//         }
 //      }
     }
 
@@ -141,11 +145,10 @@ contract Betting is usingOraclize {
       }
       result/=100;
     }
+
     function getCoinIndex(bytes32 index) constant returns (uint, uint, uint, bool, bytes32) {
       return (coinIndex[index].total, coinIndex[index].pre, coinIndex[index].post, coinIndex[index].price_check, coinIndex[index].ID);
     }
-
-    function getOraclizeIndex(bytes32 index) constant returns ()
 
     function suicide () {
         address owner = 0xafE0e12d44486365e75708818dcA5558d29beA7D;
