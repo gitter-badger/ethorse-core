@@ -11,11 +11,13 @@ contract Betting is usingOraclize {
     int public BTC_delta;
     int public ETH_delta;
     int public LTC_delta;
+    bool public betting_open=true;
 
     struct user_info{
         address from;
         bytes32 horse;
         uint amount;
+        bool rewarded;
     }
     struct coin_info{
       uint total;
@@ -41,7 +43,17 @@ contract Betting is usingOraclize {
     function Betting() {
         oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
         owner = msg.sender;
-        // update(180);
+
+    }
+
+    modifier onlyOwner {
+        require(owner == msg.sender);
+        _;
+    }
+
+    modifier lockBets {
+        require(betting_open);
+        _;
     }
 
     function __callback(bytes32 myid, string result, bytes proof) {
@@ -62,14 +74,13 @@ contract Betting is usingOraclize {
       }
     }
 
-    function placeBet(bytes32 horse) payable {
+    function placeBet(bytes32 horse) external payable {
       voterIndex[voter_count].from = msg.sender;
       voterIndex[voter_count].amount = msg.value;
       voterIndex[voter_count].horse = horse;
       voter_count = voter_count + 1;
       coinIndex[horse].total = coinIndex[horse].total + msg.value;
       coinIndex[horse].count = coinIndex[horse].count + 1;
-
       Deposit(msg.sender, msg.value);
     }
 
@@ -77,37 +88,40 @@ contract Betting is usingOraclize {
       Deposit(msg.sender, msg.value);
     }
 
-    function update(uint betting_duration) payable {
+    function update(uint betting_duration, uint delay)  payable {
         if (oraclize_getPrice("URL") > (this.balance)) {
             newOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
         } else {
             newOraclizeQuery("Oraclize query was sent, standing by for the answer..");
-            temp_ID = oraclize_query(0, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
+            // bets open price query
+            temp_ID = oraclize_query(delay, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
             oraclizeIndex[temp_ID] = bytes32("BTC");
 
-            temp_ID = oraclize_query(0, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
+            temp_ID = oraclize_query(delay, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
             oraclizeIndex[temp_ID] = bytes32("ETH");
 
-            temp_ID = oraclize_query(0, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
+            temp_ID = oraclize_query(delay, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
             oraclizeIndex[temp_ID] = bytes32("LTC");
 
-            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
+            //bets closing price query
+            temp_ID = oraclize_query(delay+betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
             oraclizeIndex[temp_ID] = bytes32("BTC");
 
-            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
+            temp_ID = oraclize_query(delay+betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
             oraclizeIndex[temp_ID] = bytes32("ETH");
 
-            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
+            temp_ID = oraclize_query(delay+betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
             oraclizeIndex[temp_ID] = bytes32("LTC");
         }
     }
 
-    function reward() {
-      // calculate the percentage
-      BTC_delta = int(coinIndex[bytes32("BTC")].post - coinIndex[bytes32("BTC")].pre)/int(coinIndex[bytes32("BTC")].pre);
-      ETH_delta = int(coinIndex[bytes32("ETH")].post - coinIndex[bytes32("ETH")].pre)/int(coinIndex[bytes32("ETH")].pre);
-      LTC_delta = int(coinIndex[bytes32("LTC")].post - coinIndex[bytes32("LTC")].pre)/int(coinIndex[bytes32("LTC")].pre);
+    function reward() internal {
+      // calculating the difference in price with a precision of 5 digits
+      BTC_delta = int(coinIndex[bytes32("BTC")].post - coinIndex[bytes32("BTC")].pre)*100000/int(coinIndex[bytes32("BTC")].pre);
+      ETH_delta = int(coinIndex[bytes32("ETH")].post - coinIndex[bytes32("ETH")].pre)*100000/int(coinIndex[bytes32("ETH")].pre);
+      LTC_delta = int(coinIndex[bytes32("LTC")].post - coinIndex[bytes32("LTC")].pre)*100000/int(coinIndex[bytes32("LTC")].pre);
 
+      // contract fee
       owner.transfer((this.balance*15)/100);
 
       if (BTC_delta > ETH_delta) {
@@ -129,34 +143,32 @@ contract Betting is usingOraclize {
      for (uint i=0; i<voter_count+1; i++) {
         if (voterIndex[i].horse == winner_horse) {
          winner_reward = (voterIndex[i].amount / coinIndex[winner_horse].total )*total_reward;
-         voterIndex[i].from.transfer(winner_reward);
-         Withdraw(voterIndex[i].from, winner_reward);
+         if (!voterIndex[i].rewarded) {
+            voterIndex[i].rewarded = true;
+            voterIndex[i].from.transfer(winner_reward);
+            Withdraw(voterIndex[i].from, winner_reward);
+         }
         }
      }
     }
 
-    function stringToUintNormalize(string s) constant returns (uint) {
+    function stringToUintNormalize(string s) constant returns (uint result) {
       uint p =2;
-      bool happening=false;
+      bool precision=false;
       bytes memory b = bytes(s);
       uint i;
-      uint result = 0;
+      result = 0;
       for (i = 0; i < b.length; i++) {
-          if (happening == true) {
-              p = p-1;
-          }
-          if (uint(b[i]) == 46){
-              happening = true;
-          }
+          if (precision == true) {p = p-1;}
+          if (uint(b[i]) == 46){precision = true;}
           uint c = uint(b[i]);
-          if (c >= 48 && c <= 57) {
-            result = result * 10 + (c - 48);
-          }
-          if (happening==true && p == 0){
-              return result;
-          }
+          if (c >= 48 && c <= 57) {result = result * 10 + (c - 48);}
+          if (precision==true && p == 0){return result;}
         }
-      return result;
+      while (p!=0) {
+        result = result*10;
+        p=p-1;
+      }
     }
 
     function getCoinIndex(bytes32 index) constant returns (uint, uint, uint, bool, uint) {
@@ -171,8 +183,7 @@ contract Betting is usingOraclize {
         return coinIndex[index].total;
     }
 
-    function suicide () {
-        address owner = 0xafE0e12d44486365e75708818dcA5558d29beA7D;
+    function suicide () onlyOwner {
         owner.transfer(this.balance);
     }
   }
