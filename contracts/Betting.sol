@@ -47,6 +47,7 @@ contract Betting is usingOraclize {
     function Betting() {
         oraclize_setProof(proofType_TLSNotary | proofStorage_IPFS);
         owner = msg.sender;
+        oraclize_setCustomGasPrice(4000000000 wei);
     }
 
     modifier onlyOwner {
@@ -113,14 +114,13 @@ contract Betting is usingOraclize {
             oraclizeIndex[temp_ID] = bytes32("LTC");
 
             //bets closing price query
-            // oraclize_setCustomGasPrice(400000);
-            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd");
+            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/bitcoin/).0.price_usd",3000000);
             oraclizeIndex[temp_ID] = bytes32("BTC");
 
-            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd");
+            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/ethereum/).0.price_usd",3000000);
             oraclizeIndex[temp_ID] = bytes32("ETH");
 
-            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd");
+            temp_ID = oraclize_query(betting_duration, "URL", "json(http://api.coinmarketcap.com/v1/ticker/litecoin/).0.price_usd",3000000);
             oraclizeIndex[temp_ID] = bytes32("LTC");
         }
     }
