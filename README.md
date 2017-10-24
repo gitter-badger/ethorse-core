@@ -1,4 +1,6 @@
 # Ethereum-Betting
+
+[![Join the chat at https://gitter.im/ethorse-core/Lobby](https://badges.gitter.im/ethorse-core/Lobby.svg)](https://gitter.im/ethorse-core/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Example webpack project with Truffle. Includes contracts, migrations, tests, user interface and webpack build pipeline.
 
 ## Usage
